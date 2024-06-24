@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "neuralnet-game"
+version = "0.1.0"
+description = ""
+authors = ["Mikeymoo5 <moodids@outlook.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pygame = "^2.5.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
