@@ -1,6 +1,6 @@
 import pygame
 import Sprites.Sprites as Sprites
-
+from UTIL import *
 GRID_SIZE = 16
 GRID_X = 40
 GRID_Y = 40
@@ -24,8 +24,6 @@ def main():
 
     # Pygame loop
     while running:
-
-        player_sprites.draw(screen)
         pet_sprites.draw(screen)
 
         pygame.display.flip()
