@@ -8,3 +8,6 @@ class PetSprite(pygame.sprite.Sprite):
 
         self.rect.x = 16
         self.rect.y = 16
+    def updatePos(self, x, y):
+        self.rect.x = x
+        self.rect.y = y
