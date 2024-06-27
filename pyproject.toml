@@ -6,9 +6,8 @@ authors = ["Mikeymoo5 <moodids@outlook.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
-pygame = "^2.5.2"
-numpy = "^2.0.0"
+python = "^3.11"
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"

@@ -3,6 +3,10 @@ import Sprites.Sprites as Sprites
 import numpy
 import click
 from UTIL import *
+
+# TF
+import tensorflow as tf
+
 GRID_SIZE = 16
 GRID_X = 40
 GRID_Y = 40
