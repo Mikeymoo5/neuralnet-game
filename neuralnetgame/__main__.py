@@ -13,6 +13,7 @@ SPRITE_DATA = {
     "colors": {
         "pet": (115, 113, 81),
         "food": (92, 62, 43),
+        "water": (15, 159, 255),
         "background": (23, 194, 59)
     }
 }
@@ -25,45 +26,58 @@ def main():
     
     global loc_dict
     loc_dict = {
-        "pet_pos": (20, 30),
-        "food_pos": (10, 10)
+        "pet": (20, 20),
+        "food": (10, 10),
+        "water": (30, 10)
     }
+    sprites = pygame.sprite.Group()
     pet = Sprites.PetSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["pet"])
-    pet_sprites = pygame.sprite.GroupSingle()
-    pet_sprites.add(pet)
+    sprites.add(pet)
 
-    food = Sprites.FoodSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["food"])
-    food_sprites = pygame.sprite.GroupSingle()
-    food_sprites.add(food)
+    food = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["food"], 5)
+    sprites.add(food)
 
+    water = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["water"], 5)
+    sprites.add(water)
+
+    active_tool = "food"
     # Pygame loop
     while running:
         screen.fill(SPRITE_DATA["colors"]["background"])
 
-        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["pet_pos"][0], loc_dict["pet_pos"][1], GRID_SIZE)
+        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["pet"][0], loc_dict["pet"][1], GRID_SIZE)
         pet.updatePos(temp_x, temp_y)
         
-        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["food_pos"][0], loc_dict["food_pos"][1], GRID_SIZE)
+        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["food"][0], loc_dict["food"][1], GRID_SIZE)
         food.updatePos(temp_x, temp_y)
 
+        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["water"][0], loc_dict["water"][1], GRID_SIZE)
+        water.updatePos(temp_x, temp_y)
+
         updatePositions()
-        pet_sprites.draw(screen)
-        food_sprites.draw(screen)
+        sprites.draw(screen)
 
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    active_tool = "food"
+                elif event.key == pygame.K_2:
+                    active_tool = "water"
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Updates the food position to the grid cell that was clicked
                 # TODO: Allow for clicking to change what is placed - i.e water, food, toys, etc
-                loc_dict["food_pos"] = coord_converter.screenToGrid(event.pos[0], event.pos[1], GRID_SIZE)
+                loc_dict[active_tool] = coord_converter.screenToGrid(event.pos[0], event.pos[1], GRID_SIZE)
 
 def updatePositions():
     global world
     world = numpy.zeros(shape = (GRID_X, GRID_Y), dtype = int)
-    world[loc_dict["pet_pos"][0]][loc_dict["pet_pos"][1]] = 1
-    world[loc_dict["food_pos"][0]][loc_dict["food_pos"][1]] = 2
+    world[loc_dict["pet"][0]][loc_dict["pet"][1]] = 1
+    world[loc_dict["food"][0]][loc_dict["food"][1]] = 2
+    world[loc_dict["water"][0]][loc_dict["water"][1]] = 3
     
 if __name__ == "__main__":
     main()
