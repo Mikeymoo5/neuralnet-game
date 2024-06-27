@@ -1,6 +1,7 @@
 import pygame
 import Sprites.Sprites as Sprites
 import numpy
+import click
 from UTIL import *
 GRID_SIZE = 16
 GRID_X = 40
@@ -17,6 +18,10 @@ SPRITE_DATA = {
         "background": (23, 194, 59)
     }
 }
+
+# TODO: Implement CLI options to disable the pygame interface and train the neural net
+# @click.command()
+# @click.option("--train")
 def main():
     # Pygame init
     pygame.init()
@@ -45,6 +50,7 @@ def main():
     while running:
         screen.fill(SPRITE_DATA["colors"]["background"])
 
+        # Update the positions of the sprites
         temp_x, temp_y = coord_converter.gridToScreen(loc_dict["pet"][0], loc_dict["pet"][1], GRID_SIZE)
         pet.updatePos(temp_x, temp_y)
         
@@ -57,20 +63,37 @@ def main():
         updatePositions()
         sprites.draw(screen)
 
-        pygame.display.flip()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.KEYDOWN:
+
                 if event.key == pygame.K_1:
                     active_tool = "food"
                 elif event.key == pygame.K_2:
                     active_tool = "water"
 
+                elif event.key == pygame.K_f:
+                    if active_tool == "food":
+                        food.use()
+                        if food.uses <= 0:
+                            loc_dict["food"] = (-1, -1)
+                    elif active_tool == "water":
+                        water.use()
+                        if water.uses <= 0:
+                            loc_dict["water"] = (-1, -1)
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 # Updates the food position to the grid cell that was clicked
                 # TODO: Allow for clicking to change what is placed - i.e water, food, toys, etc
+                if active_tool == "food":
+                    food.replenish()
+                elif active_tool == "water":
+                    water.replenish()
                 loc_dict[active_tool] = coord_converter.screenToGrid(event.pos[0], event.pos[1], GRID_SIZE)
+        
+        # Push the changes to the screen
+        pygame.display.flip()
 
 def updatePositions():
     global world
