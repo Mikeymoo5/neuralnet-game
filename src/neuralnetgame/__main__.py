@@ -5,10 +5,10 @@ import numpy
 from UTIL import *
 
 # Machine learning *magic*
-from Environments.SimEnvironment.SimEnvironment import SimEnv
+from Environments.SimEnvironment import SimEnv
 import gymnasium as gym
 
-gym.make('SimEnv-v0')
+env = gym.make('SimEnv-v0')
 
 GRID_SIZE = 16
 GRID_X = 40
@@ -30,7 +30,6 @@ SPRITE_DATA = {
 # @click.command()
 # @click.option("--train")
 def main():
-    env = SimEnvironment.SimEnvironment()
     # Pygame init
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))

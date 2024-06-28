@@ -9,14 +9,14 @@ class SimEnv(gym.Env):
     def __init__(self, render_mode = None, cell_size = 16, grid_size = 40):
         # Define the action and observation space
         high = 2 # Grass (0), food (1), water (2)
-        self.observation_space = {
+        self.observation_space = spaces.Dict({
             "world": spaces.Box(0, high, shape=(grid_size, grid_size), dtype=int),
-            "pet": {
+            "pet": spaces.Dict({
                 "loc": spaces.Box(0, grid_size-1, shape=(2,), dtype=int),
                 "hunger": spaces.Box(0, 100, shape=(1,), dtype=int),
-                "thirst": spaces.Box(0, 100, shape=(1,), dtype=int)
-            }
-        }
+                "thirst": spaces.Box(0, 100, shape=(1,), dtype=int),
+            })
+        })
         # nothing, up, down, left, right, interact - 6 possible actions
         self.action_space = spaces.Discrete(6)
         
