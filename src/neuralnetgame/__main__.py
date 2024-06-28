@@ -3,9 +3,7 @@ import Sprites.Sprites as Sprites
 import numpy
 import click
 from UTIL import *
-
-# TF
-import tensorflow as tf
+from Environment import Environment
 
 GRID_SIZE = 16
 GRID_X = 40
@@ -27,6 +25,7 @@ SPRITE_DATA = {
 # @click.command()
 # @click.option("--train")
 def main():
+    env = Environment.SimEnvironment()
     # Pygame init
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))

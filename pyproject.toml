@@ -1,17 +1,22 @@
-[tool.poetry]
+[project]
 name = "neuralnetgame"
 version = "0.1.0"
-description = ""
-authors = ["Mikeymoo5 <moodids@outlook.com>"]
+description = "Default template for PDM package"
+authors = [
+    {name = "Mikeymoo5", email = "moodids@outlook.com"},
+]
+dependencies = [
+    "tensorflow-io-gcs-filesystem==0.30.0",
+    "tensorflow==2.11",
+    "gymnasium>=0.29.1",
+    "tf-agents==0.15.0",
+    "pygame>=2.1.0",
+    "click>=8.1.7",
+]
+requires-python = "==3.10.*"
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.11"
+license = {text = "MIT"}
 
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[tool.pdm]
+distribution = false
