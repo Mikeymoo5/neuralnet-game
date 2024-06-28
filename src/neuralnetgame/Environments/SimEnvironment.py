@@ -1,9 +1,12 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
+import pygame
 
-class SimEnvironment(gym.Env):
-    def __init__(self, cell_size = 16, grid_size = 40):
+class SimEnv(gym.Env):
+    metadata = {'render_modes': ['human'], 'render_fps': 1}
+
+    def __init__(self, render_mode = None, cell_size = 16, grid_size = 40):
         # Define the action and observation space
         high = 2 # Grass (0), food (1), water (2)
         self.observation_space = {
@@ -28,6 +31,10 @@ class SimEnvironment(gym.Env):
             4: [1, 0], # Right
             5: "interact" # Interact
         }
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
     def _move_pet(self, move: list):
         new_loc = np.array(self._pet["loc"]) + np.array(move)
         if new_loc < 0 or new_loc >= self.grid_size or new_loc == self._food_loc or new_loc == self._water_loc:
@@ -97,9 +104,6 @@ class SimEnvironment(gym.Env):
             reward -= 2
         
         return reward
-    
-    def _render_frame(self):
-        pass #TODO: Render the current state of the environment
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -143,3 +147,11 @@ class SimEnvironment(gym.Env):
             terminated = True
 
         return observation, reward, terminated, info
+    
+    def _render_frame(self):
+        pass #TODO: Render the current state of the environment
+
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
