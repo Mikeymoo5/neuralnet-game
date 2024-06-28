@@ -8,7 +8,11 @@ class SimEnvironment(gym.Env):
         high = 2 # Grass (0), food (1), water (2)
         self.observation_space = {
             "world": spaces.Box(0, high, shape=(grid_size, grid_size), dtype=int),
-            "pet": spaces.Box(0, grid_size-1, shape=(2,), dtype=int),
+            "pet": {
+                "loc": spaces.Box(0, grid_size-1, shape=(2,), dtype=int),
+                "hunger": spaces.Box(0, 100, shape=(1,), dtype=int),
+                "thirst": spaces.Box(0, 100, shape=(1,), dtype=int)
+            }
         }
         # nothing, up, down, left, right, interact - 6 possible actions
         self.action_space = spaces.Discrete(6)
@@ -26,11 +30,16 @@ class SimEnvironment(gym.Env):
         }
     def _move_pet(self, move: list):
         pass #TODO Accept an array, add it to the pet's location, and check for bounds
-
+    def _interact_pet(self):
+        pass #TODO Check if the pet is near a food or water tile, then update stats accordingly
     def _get_obs(self):
         return {
             "world": self._world,
-            "pet": self._pet_loc
+            "pet": {
+                "loc": self._pet_loc,
+                "hunger": self._pet_hunger,
+                "thirst": self._pet_thirst
+            }
         }
     
     def _get_info(self):
@@ -38,10 +47,18 @@ class SimEnvironment(gym.Env):
             "temp": "temp"
         }
     
+    def _render_frame(self):
+        pass #TODO: Render the current state of the environment
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self._world = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self._pet_loc = [self.grid_size//2, (self.grid_size//4)*3]
+        self._pet_hunger = 100
+        self._pet_thirst = 100
+
+        self._food_loc = [self.grid_size//4, self.grid_size//4]
+        self._water_loc = [(self.grid_size//4)*3, self.grid_size//4]
 
         observation = self._get_obs()
         info = self._get_info()
@@ -50,7 +67,27 @@ class SimEnvironment(gym.Env):
     
     def step(self, action):
         act_str = self._action_to_str[action]
+
+        # TODO: Find a more efficient way to do this
         if act_str == "nothing":
-            pass
+            act_type = 0
+            move = np.array([0, 0])
         elif act_str == "up":
-            pass #TODO implement
+            act_type = 0
+            move = np.array([0, -1])
+        elif act_str == "down":
+            act_type = 0
+            move = np.array([0, 1])
+        elif act_str == "left":
+            act_type = 0
+            move = np.array([-1, 0])
+        elif act_str == "right":
+            act_type = 0
+            move = np.array([1, 0])
+        elif act_str == "interact":
+            act_type = 1
+
+        if act_type == 0:
+            self._move_pet(move)
+        elif act_type == 1:
+            self._interact_pet()
