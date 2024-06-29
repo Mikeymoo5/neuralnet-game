@@ -38,7 +38,9 @@ class SimEnv(gym.Env):
 
     def _move_pet(self, move: list):
         new_loc = np.array(self._pet["loc"]) + np.array(move)
-        if new_loc < 0 or new_loc >= self.grid_size or new_loc == self._food_loc or new_loc == self._water_loc:
+        new_loc = new_loc.tolist()
+        # TODO: Find a less resource intensive way to check for bound issues
+        if new_loc[0] < 0 or new_loc[1] < 0 or new_loc[0] >= self.grid_size or new_loc[1] >= self.grid_size or new_loc == self._food_loc or new_loc == self._water_loc:
             return {
                 "action_type": "move",
                 "status": "fail",
@@ -67,11 +69,7 @@ class SimEnv(gym.Env):
     def _get_obs(self):
         return {
             "world": self._world,
-            "pet": {
-                "loc": self._pet["loc"],
-                "hunger": self._pet["hunger"],
-                "thirst": self._pet["thirst"]
-            }
+            "pet": self._pet
         }
     
     def _get_info(self):
@@ -89,12 +87,12 @@ class SimEnv(gym.Env):
             return reward
         
         # Reward the agent for eating or drinking when under 80 hunger or thirst
-        if action["action_type"] == "interact":
-            if action["status"] == "success":
-                if action["interact_type"] == "food":
+        if self.action["action_type"] == "interact":
+            if self.action["status"] == "success":
+                if self.action["interact_type"] == "food":
                     if self._pet["hunger"] <= 80:
                         reward += 3
-                if action["interact_type"] == "water":
+                if self.action["interact_type"] == "water":
                     if self._pet["thirst"] <= 80:
                         reward += 3
 
@@ -121,19 +119,19 @@ class SimEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
         # Return an observation of the environment - In this case, the world array. Also return auxillary information
-        return observation, info
+        return observation
     
     def step(self, action):
         # Convert an action into a dict {type, status, loc/none}
         action = self._action_map[action]
-        if action is list:
+        if isinstance(action, list):
             self.action = self._move_pet(action)
             self._pet["loc"] = action
         elif action == "interact":
             self.action = self._interact_pet()
         else:
             # Anything that isnt a list and isnt a string is invalid - how did we get here?
-            raise ValueError("Invalid action - Achievement unlocked: How did we get here?")
+            raise ValueError(f"Invalid action: {action} - Achievement unlocked: How did we get here?")
         # Decrease hunger and thirst every step
         self._pet["hunger"] -= 0.75
         self._pet["thirst"] -= 0.75

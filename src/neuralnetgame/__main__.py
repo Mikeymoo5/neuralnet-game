@@ -32,18 +32,6 @@ os.environ['TF_USE_LEGACY_KERAS'] = '1'
 
 learning_rate = 1e-3 # Set the size of steps the optimizer will take
 
-
-def dense_layer(num_units):
-    return tf.keras.layers.Dense(
-        num_units,
-        activation=tf.keras.activations.relu,
-        kernel_initializer=tf.keras.initializers.VarianceScaling(
-            scale=2.0, mode='fan_in', distribution='truncated_normal'
-        )
-    )
-
-
-
 # Misc constants
 GRID_SIZE = 16
 GRID_X = 40
@@ -104,7 +92,23 @@ def main():
 
     agent.initialize()
 
-    print(agent.policy)
+    agent.train = common.function(agent.train) # I guess this optimizes it somehow
+    agent.train_step_counter.assign(0) # Resets the training step counter
+    r = average_return(train_env, agent.policy, 10) # Evaluates the agent for 10 episodes
+    print(f'Baseline return: {r}')
+    collect_driver = py_driver.PyDriver(
+        train_env,
+        py_tf_eager_policy.PyTFEagerPolicy(
+            agent.collect_policy, use_tf_function=True
+        ),
+        [rb_observer],
+        max_steps=collect_steps_per_iteration)
+    agent.train()
+    episodes = 10
+    for i in range(episodes):
+        pass
+    
+
     # END TF AGENTS CODE - TY TF AGENTS GUIDE <3
 
     # Pygame init
@@ -185,6 +189,36 @@ def updatePositions():
     world[loc_dict["pet"][0]][loc_dict["pet"][1]] = 1
     world[loc_dict["food"][0]][loc_dict["food"][1]] = 2
     world[loc_dict["water"][0]][loc_dict["water"][1]] = 3
-    
+
+def dense_layer(num_units):
+    return tf.keras.layers.Dense(
+        num_units,
+        activation=tf.keras.activations.relu,
+        kernel_initializer=tf.keras.initializers.VarianceScaling(
+            scale=2.0, mode='fan_in', distribution='truncated_normal'
+        )
+    )
+
+# Used when evaluating an agent - This is a custom implementation - I think there is a metric function that does this more efficiently
+def average_return(env, policy, episodes=10):
+    total_return = 0
+    for i in range(episodes):
+        # Runs each episode
+        time_step = env.reset()
+
+        while not time_step.is_last():
+            # Runs each step of the episode
+            action = policy.action(time_step)
+            time_step = env.step(action)
+            total_return += time_step.reward
+    avg = total_return / episodes
+    return avg.numpy()[0] # Returns the average reward, converted from a tensor to a numpy array
+
+            
+
+        
+
+
+
 if __name__ == "__main__":
     main()
