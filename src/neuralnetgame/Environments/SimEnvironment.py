@@ -1,5 +1,5 @@
-import gymnasium as gym
-from gymnasium import spaces
+import gym
+from gym import spaces
 import numpy as np
 import pygame
 
@@ -7,6 +7,7 @@ class SimEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 1}
 
     def __init__(self, render_mode = None, cell_size = 16, grid_size = 40):
+        
         # Define the action and observation space
         high = 2 # Grass (0), food (1), water (2)
         self.observation_space = spaces.Dict({
