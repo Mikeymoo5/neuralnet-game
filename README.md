@@ -1,7 +1,7 @@
 ## NOTE: This project is currently in an unfinished state; Not all functionality has been added yet
 
 # TODO
-- [ ] Finish Gymnasium environment
+- [x] Finish Gymnasium environment
 - [ ] Implement general TensorFlow functionality
 - [ ] Finetune training settings
 - [ ] Comfort features
