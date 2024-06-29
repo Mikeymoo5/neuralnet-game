@@ -3,7 +3,7 @@
 # TODO
 - [x] Finish Gymnasium environment
 - [x] Implement general TensorFlow functionality
-- [] Switch to Pytorch because general tensorflow functionality means no functionality at all because tensorflow lacks an observer library for windows
+- [ ] Switch to Pytorch because general tensorflow functionality means no functionality at all because tensorflow lacks an observer library for windows
 - [ ] Finetune training settings
 - [ ] Comfort features
   - [ ] Full click support for easier training
