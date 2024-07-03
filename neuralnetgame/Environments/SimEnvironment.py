@@ -10,12 +10,14 @@ class SimEnv(gym.Env):
         
         # Define the action and observation space
         high = 2 # Grass (0), food (1), water (2)
+        # "hunger": spaces.Box(0, 100, shape=(1,), dtype=int),
+        # "thirst": spaces.Box(0, 100, shape=(1,), dtype=int),
         self.observation_space = spaces.Dict({
             "world": spaces.Box(0, high, shape=(grid_size, grid_size), dtype=int),
             "pet": spaces.Dict({
                 "loc": spaces.Box(0, grid_size-1, shape=(2,), dtype=int),
-                "hunger": spaces.Box(0, 100, shape=(1,), dtype=int),
-                "thirst": spaces.Box(0, 100, shape=(1,), dtype=int),
+                "hunger": spaces.Discrete(101),
+                "thirst": spaces.Discrete(101),
             })
         })
         # nothing, up, down, left, right, interact - 6 possible actions
@@ -119,7 +121,8 @@ class SimEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
         # Return an observation of the environment - In this case, the world array. Also return auxillary information
-        return observation
+        print (self._pet)
+        return observation, info
     
     def step(self, action):
         # Convert an action into a dict {type, status, loc/none}

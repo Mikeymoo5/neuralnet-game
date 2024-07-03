@@ -19,18 +19,31 @@ import torch
 import torch.nn as nn # Neural network
 import torch.optim as optim # Optimizer
 import torch.nn.functional as F # Functional
+
+# Pytorch hyperparameters
+BATCH_SIZE = 128 # The sample size from the replay memory
+GAMMA = 0.99 # Discount factor
+EPS_START = 0.9
+EPS_END = 0.05
+EPS_DECAY = 1000
+TAU = 0.005
+LR = 1e-4 # The learning rate of the optimizer
+
 # Set the device to use for the neural net
-#"directml" if torch_directml.is_available() else - doesnt work, not sure why
-DEVICE = torch.device(
+device = torch_directml.device(
     "cuda" if torch.cuda.is_available() else 
-    "directml" if torch_directml.is_available() else
+    torch_directml.default_device() if torch_directml.is_available() else
     "mps" if torch.backends.mps.is_available() else
     "cpu"
 )
 
-print(f"Using device: {DEVICE}")
+print(f"Using device: {device}")
 t_env = gym.make("SimEnv-v0")
 env = FlattenObservation(t_env) # Flatten the observation space
+
+n_actions = env.action_space.n
+state, info = env.reset()
+print(f'State type: {type(state)}')
 
 # Misc constants
 GRID_SIZE = 16
