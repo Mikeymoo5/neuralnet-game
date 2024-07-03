@@ -1,3 +1,4 @@
 python == 3.11.*
+pygame == x.x.x
 pytorch == x.x.x
 torchrl == x.x.x

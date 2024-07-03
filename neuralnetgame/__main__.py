@@ -1,19 +1,36 @@
-import pygame
-import Sprites.Sprites as Sprites
-import numpy
-# import click
+# Project imports
 from UTIL import *
+import Sprites.Sprites as Sprites
+from Environments.SimEnvironment import SimEnv
+
+
+# Misc imports
+import pygame
+import numpy
 
 # Gymnasium and Environment imports
-from Environments.SimEnvironment import SimEnv
 import gymnasium as gym
+from gymnasium.wrappers import FlattenObservation
 
-# Tensorflow imports
+# Pytorch imports
+import torch_directml
 
-import os
-import sys
+import torch
+import torch.nn as nn # Neural network
+import torch.optim as optim # Optimizer
+import torch.nn.functional as F # Functional
+# Set the device to use for the neural net
+#"directml" if torch_directml.is_available() else - doesnt work, not sure why
+DEVICE = torch.device(
+    "cuda" if torch.cuda.is_available() else 
+    "directml" if torch_directml.is_available() else
+    "mps" if torch.backends.mps.is_available() else
+    "cpu"
+)
 
-learning_rate = 1e-3 # Set the size of steps the optimizer will take
+print(f"Using device: {DEVICE}")
+t_env = gym.make("SimEnv-v0")
+env = FlattenObservation(t_env) # Flatten the observation space
 
 # Misc constants
 GRID_SIZE = 16
@@ -36,64 +53,6 @@ SPRITE_DATA = {
 # @click.command()
 # @click.option("--train")
 def main():
-    # A lot of the the following TF code is from the TF Agents guide - https://www.tensorflow.org/agents/tutorials/1_dqn_tutorial - I have added comments using my knowledge of what is happening
-    # Environment setup
-    train_py_env = suite_gym.load('SimEnv-v0', gym_env_wrappers=[FlattenObservation])
-    # eval_py_env = suite_gym.load('SimEnv-v0')
-    train_env = tf_py_environment.TFPyEnvironment(train_py_env)
-    # eval_env = tf_py_environment.TFPyEnvironment(eval_py_env)
-
-    fc_layer_params = (100, 50)
-    action_spec = tensor_spec.from_spec(train_env.action_spec())
-    num_actions = action_spec.maximum - action_spec.minimum + 1 # honestly no clue what this does)
-    dense_layers = [dense_layer(num_units) for num_units in fc_layer_params] # Create the hidden dense layers
-
-    # Define the last layer of the network - It should have the same number of outputs as the number of actions (6 in this case)
-    q_values_layer = tf.keras.layers.Dense(
-        num_actions,
-        activation=None, 
-        kernel_initializer=tf.keras.initializers.RandomUniform(
-            minval=-0.3, maxval=0.3
-        ),
-        bias_initializer=tf.keras.initializers.Constant(-0.2)
-    ) 
-
-    # Create the Q network by combining the hidden dense layers (dense_layers) and the output layer (q_values_layer)
-    # q_net = sequential.Sequential(dense_layers + [q_values_layer])
-    q_net = sequential.Sequential([q_values_layer])
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-    train_step_counter = tf.Variable(0)
-
-    agent = dqn_agent.DqnAgent(
-        train_env.time_step_spec(),
-        train_env.action_spec(),
-        q_network= q_net,
-        optimizer= optimizer,
-        td_errors_loss_fn= common.element_wise_squared_loss,
-        train_step_counter= train_step_counter
-    )
-
-    agent.initialize()
-
-    agent.train = common.function(agent.train) # I guess this optimizes it somehow
-    agent.train_step_counter.assign(0) # Resets the training step counter
-    r = average_return(train_env, agent.policy, 10) # Evaluates the agent for 10 episodes
-    print(f'Baseline return: {r}')
-    collect_driver = py_driver.PyDriver(
-        train_env,
-        py_tf_eager_policy.PyTFEagerPolicy(
-            agent.collect_policy, use_tf_function=True
-        ),
-        [rb_observer],
-        max_steps=collect_steps_per_iteration)
-    agent.train()
-    episodes = 10
-    for i in range(episodes):
-        pass
-    
-
-    # END TF AGENTS CODE - TY TF AGENTS GUIDE <3
-
     # Pygame init
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
