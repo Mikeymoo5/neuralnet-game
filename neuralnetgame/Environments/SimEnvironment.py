@@ -71,7 +71,11 @@ class SimEnv(gym.Env):
     def _get_obs(self):
         return {
             "world": self._world,
-            "pet": self._pet
+            "pet": {
+                "loc": np.array(self._pet["loc"]),
+                "hunger": self._pet["hunger"],
+                "thirst": self._pet["thirst"]
+            }
         }
     
     def _get_info(self):
@@ -121,7 +125,6 @@ class SimEnv(gym.Env):
         observation = self._get_obs()
         info = self._get_info()
         # Return an observation of the environment - In this case, the world array. Also return auxillary information
-        print (self._pet)
         return observation, info
     
     def step(self, action):
