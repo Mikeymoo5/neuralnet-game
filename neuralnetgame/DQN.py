@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch.functional as F
+import torch.nn.functional as F
 
 # Much of this code is taken from the Pytorch Reinforcement Learning tutorial - I will modify it soon to be more specific to the game
 class DQN(nn.Module):

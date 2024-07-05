@@ -5,10 +5,10 @@ Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'
 # Most of this code was provided by the PyTorch tutorial on Reinforcement Learning
 class Replay():
     def __init__(self, capacity):
-        self.memory = deque(maxlen=capacity)
+        self.memory = deque([],maxlen=capacity)
 
     def push(self, *args):
-        self.memory.append = Transition(*args) # 'Pushes' the transition to the memory
+        self.memory.append(Transition(*args)) # 'Pushes' the transition to the memory
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size) # Chooses a batch_size number of random sample of transitions from the memory

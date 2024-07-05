@@ -2,8 +2,9 @@
 from UTIL import *
 import Sprites.Sprites as Sprites
 from Environments.SimEnvironment import SimEnv
-import DQN
-import ReplayMemory
+from DQN import DQN
+from ReplayMemory import Replay
+from ReplayMemory import Transition
 
 # Misc imports
 import pygame
@@ -34,6 +35,8 @@ EPS_DECAY = 1000
 TAU = 0.005
 LR = 1e-4 # The learning rate of the optimizer
 
+steps_done = 0
+
 is_ipython = 'inline' in matplotlib.get_backend()
 if is_ipython:
     from IPython import display
@@ -46,19 +49,22 @@ device = torch_directml.device(
     "cpu"
 )
 
-t_env = gym.make("SimEnv-v0", disable_env_checker=True) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
+print(f"Using device: {device}")
+
+t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
 env = FlattenObservation(t_env) # Flatten the observation space
 
 state, info = env.reset()
 n_observations = len(state)
+print(f'Observation length: {len(state)}')
 n_actions = env.action_space.n
 
-policy_net = DQN(n_observations, n_actions).to(device)
-target_net = DQN(n_observations, n_actions).to(device)
+policy_net = DQN(n_actions, n_observations).to(device)
+target_net = DQN(n_actions, n_observations).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 
 optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
-memory = ReplayMemory(10000) # Create a replay memory with a capacity of 10000
+memory = Replay(10000) # Create a replay memory with a capacity of 10000
 
 # This function will occasionally choose a random action instead of a predicted action, with the odds decreasing as time goes on
 # Taken from the Pytorch Reinforcement Learning tutorial
@@ -83,7 +89,7 @@ def optimize_model():
         return
     
     transitions = memory.sample(BATCH_SIZE)
-    batch = ReplayMemory.Transition(*zip(*transitions))
+    batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                           batch.next_state)), device=device, dtype=torch.bool)
     non_final_next_states = torch.cat([s for s in batch.next_state
@@ -122,7 +128,7 @@ def optimize_model():
 episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
-def train(n_episodes, wait_time=0):
+def train(n_episodes, wait_time=0, render=False, report_interval=10):
     for i_episode in range(n_episodes):
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
@@ -131,7 +137,8 @@ def train(n_episodes, wait_time=0):
             observation, reward, terminated, truncated, _ = env.step(action.item())
             reward = torch.tensor([reward], device=device) # Converts the reward to a tensor with a single value
             done = terminated or truncated # The episode is done if the environment is terminated or truncated
-
+            if i % report_interval == 0:
+                print(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}")
             if terminated:
                 next_state = None
             else:
@@ -155,7 +162,7 @@ def train(n_episodes, wait_time=0):
                 break
             if wait_time > 0: time.sleep(wait_time) # Wait for a certain amount of time before taking the next step
 
-train(50)
+train(500, report_interval=20)
 plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True)
 
 # Misc constants

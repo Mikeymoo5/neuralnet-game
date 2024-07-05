@@ -6,7 +6,7 @@ import pygame
 class SimEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 1}
 
-    def __init__(self, render_mode = None, cell_size = 16, grid_size = 40):
+    def __init__(self, render_mode = None, cell_size = 16, grid_size = 20):
         
         # Define the action and observation space
         high = 2 # Grass (0), food (1), water (2)
@@ -91,23 +91,36 @@ class SimEnv(gym.Env):
         if self._pet["hunger"] <= 0 or self._pet["thirst"] <= 0:
             reward = -1000
             return reward
-        
+        # Reward the agent for moving
+        if self.action["action_type"] == "move":
+            reward += 0.08
         # Reward the agent for eating or drinking when under 80 hunger or thirst
         if self.action["action_type"] == "interact":
             if self.action["status"] == "success":
                 if self.action["interact_type"] == "food":
                     if self._pet["hunger"] <= 80:
-                        reward += 3
+                        reward += 2
+                    else:
+                        reward += 2
                 if self.action["interact_type"] == "water":
                     if self._pet["thirst"] <= 80:
-                        reward += 3
+                        reward += 2
+                    else:
+                        reward += 2
 
         # Punish the agent for low hunger or thirst
         if self._pet["hunger"] <= 40:
-            reward -= 2
+            food_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._food_loc))
+            if food_dist < 5:
+                reward += (0-food_dist) * 0.01
+            reward -= 0.1
         if self._pet["thirst"] <= 40:
-            reward -= 2
+            water_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._food_loc))
+            if water_dist < 5:
+                reward += (0-water_dist) * 0.01
+            reward -= 0.1
         
+        reward += 0.01
         return reward
 
     def reset(self, seed=None, options=None):
@@ -139,8 +152,8 @@ class SimEnv(gym.Env):
             # Anything that isnt a list and isnt a string is invalid - how did we get here?
             raise ValueError(f"Invalid action: {action} - Achievement unlocked: How did we get here?")
         # Decrease hunger and thirst every step
-        self._pet["hunger"] -= 0.75
-        self._pet["thirst"] -= 0.75
+        self._pet["hunger"] -= 1
+        self._pet["thirst"] -= 1
 
         observation = self._get_obs()
         info = self._get_info()
@@ -151,7 +164,7 @@ class SimEnv(gym.Env):
         if self._pet["hunger"] <= 0 or self._pet["thirst"] <= 0:
             terminated = True
 
-        return observation, reward, terminated, info
+        return observation, reward, terminated, False, info
     
     def _render_frame(self):
         pass #TODO: Render the current state of the environment
