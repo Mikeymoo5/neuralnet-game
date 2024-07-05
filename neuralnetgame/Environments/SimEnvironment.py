@@ -17,8 +17,8 @@ class SimEnv(gym.Env):
             "world": spaces.Box(0, high, shape=(grid_size, grid_size), dtype=int),
             "pet": spaces.Dict({
                 "loc": spaces.Box(0, grid_size-1, shape=(2,), dtype=int),
-                "hunger": spaces.Discrete(101),
-                "thirst": spaces.Discrete(101),
+                "hunger": spaces.Box(low=np.array([-1]), high=np.array([1])),
+                "thirst": spaces.Box(low=np.array([-1]), high=np.array([1]))
             })
         })
         # nothing, up, down, left, right, interact - 6 possible actions
@@ -72,12 +72,20 @@ class SimEnv(gym.Env):
             return {"action_type": "interact", "status": "fail", "interact_type": "none"}
         
     def _get_obs(self):
+        # return {
+        #     "world": self._world,
+        #     "pet": {
+        #         "loc": np.array(self._pet["loc"]),
+        #         "hunger": np.array([self._pet["hunger"]], dtype=np.float32),
+        #         "thirst": np.array([self._pet["thirst"]], dtype=np.float32)
+        #     }
+        # }
         return {
             "world": self._world,
             "pet": {
                 "loc": np.array(self._pet["loc"]),
-                "hunger": self._pet["hunger"],
-                "thirst": self._pet["thirst"]
+                "hunger": np.array([self._pet["hunger"]/100], dtype=np.float32),
+                "thirst": np.array([self._pet["thirst"]/100], dtype=np.float32)
             }
         }
     
@@ -131,8 +139,8 @@ class SimEnv(gym.Env):
         self._world = np.zeros((self.grid_size, self.grid_size), dtype=int)
         self._pet = {
             "loc": [self.grid_size//2, (self.grid_size//4)*3],
-            "hunger": 100,
-            "thirst": 100
+            "hunger": 100.0,
+            "thirst": 100.0
         }
 
         self._food_loc = [self.grid_size//4, self.grid_size//4]
@@ -159,7 +167,7 @@ class SimEnv(gym.Env):
             # Anything that isnt a list and isnt a string is invalid - how did we get here?
             raise ValueError(f"Invalid action: {action} - Achievement unlocked: How did we get here?")
         # Decrease hunger and thirst every step
-        self._pet["hunger"] -= 1
+        self._pet["hunger"] -= 0.5
         self._pet["thirst"] -= 1
 
         observation = self._get_obs()
