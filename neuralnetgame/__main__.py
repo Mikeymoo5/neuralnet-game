@@ -42,9 +42,15 @@ if is_ipython:
     from IPython import display
 
 # Set the device to use for the neural net
-device = torch_directml.device(
+# device = torch_directml.device(
+#     "cuda" if torch.cuda.is_available() else 
+#     torch_directml.default_device() if torch_directml.is_available() else
+#     "mps" if torch.backends.mps.is_available() else
+#     "cpu"
+# )
+
+device = torch.device(
     "cuda" if torch.cuda.is_available() else 
-    torch_directml.default_device() if torch_directml.is_available() else
     "mps" if torch.backends.mps.is_available() else
     "cpu"
 )
@@ -162,8 +168,10 @@ def train(n_episodes, wait_time=0, render=False, report_interval=10):
                 break
             if wait_time > 0: time.sleep(wait_time) # Wait for a certain amount of time before taking the next step
 
-train(500, report_interval=20)
+train(1000, report_interval=20)
 plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True)
+while True:
+    pass
 
 # Misc constants
 GRID_SIZE = 16
@@ -265,36 +273,6 @@ def updatePositions():
     world[loc_dict["pet"][0]][loc_dict["pet"][1]] = 1
     world[loc_dict["food"][0]][loc_dict["food"][1]] = 2
     world[loc_dict["water"][0]][loc_dict["water"][1]] = 3
-
-def dense_layer(num_units):
-    return tf.keras.layers.Dense(
-        num_units,
-        activation=tf.keras.activations.relu,
-        kernel_initializer=tf.keras.initializers.VarianceScaling(
-            scale=2.0, mode='fan_in', distribution='truncated_normal'
-        )
-    )
-
-# Used when evaluating an agent - This is a custom implementation - I think there is a metric function that does this more efficiently
-def average_return(env, policy, episodes=10):
-    total_return = 0
-    for i in range(episodes):
-        # Runs each episode
-        time_step = env.reset()
-
-        while not time_step.is_last():
-            # Runs each step of the episode
-            action = policy.action(time_step)
-            time_step = env.step(action)
-            total_return += time_step.reward
-    avg = total_return / episodes
-    return avg.numpy()[0] # Returns the average reward, converted from a tensor to a numpy array
-
             
-
-        
-
-
-
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

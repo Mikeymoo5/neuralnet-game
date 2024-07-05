@@ -2,9 +2,10 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import pygame
+from UTIL import *
 
 class SimEnv(gym.Env):
-    metadata = {'render_modes': ['human'], 'render_fps': 1}
+    metadata = {'render_modes': ['human'], 'render_fps': 60}
 
     def __init__(self, render_mode = None, cell_size = 16, grid_size = 20):
         
@@ -36,6 +37,8 @@ class SimEnv(gym.Env):
         }
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.screen = None
+        self.clock = None
         self.render_mode = render_mode
 
     def _move_pet(self, move: list):
@@ -137,6 +140,10 @@ class SimEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
         # Return an observation of the environment - In this case, the world array. Also return auxillary information
         return observation, info
     
@@ -145,7 +152,7 @@ class SimEnv(gym.Env):
         action = self._action_map[action]
         if isinstance(action, list):
             self.action = self._move_pet(action)
-            self._pet["loc"] = action
+            self._pet["loc"] = self.action["loc"]
         elif action == "interact":
             self.action = self._interact_pet()
         else:
@@ -164,10 +171,25 @@ class SimEnv(gym.Env):
         if self._pet["hunger"] <= 0 or self._pet["thirst"] <= 0:
             terminated = True
 
+        if self.render_mode == "human":
+            self._render_frame()
+
         return observation, reward, terminated, False, info
     
     def _render_frame(self):
-        pass #TODO: Render the current state of the environment
+        if self.screen == None:
+            pygame.init()
+            pygame.display.init()
+            self.screen = pygame.display.set_mode((self.grid_size * self.cell_size, self.grid_size * self.cell_size))
+        if self.clock == None:
+            self.clock = pygame.time.Clock()
+        self.screen.fill((0,255,0))
+
+        pygame.draw.rect(self.screen, (0,238,255), coord_converter.gridToRect(self._water_loc[0], self._water_loc[1], self.cell_size)) # Draws water
+        pygame.draw.rect(self.screen, (255,140,0), coord_converter.gridToRect(self._food_loc[0], self._food_loc[1], self.cell_size)) # Draws food
+        pygame.draw.rect(self.screen, (99, 58, 39), coord_converter.gridToRect(self._pet["loc"][0], self._pet["loc"][1], self.cell_size)) # Draws the pet
+        self.clock.tick(self.metadata["render_fps"])
+        pygame.display.flip()
 
     def close(self):
         if self.window is not None:
