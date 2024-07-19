@@ -5,7 +5,7 @@ import pygame
 from UTIL import *
 
 class SimEnv(gym.Env):
-    metadata = {'render_modes': ['human'], 'render_fps': 60}
+    metadata = {'render_modes': ['human'], 'render_fps': 1000000}
 
     def __init__(self, render_mode = None, cell_size = 16, grid_size = 20):
         
@@ -62,10 +62,10 @@ class SimEnv(gym.Env):
         #TODO: re-write to only do required calculations to optimize interactions
         food_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._food_loc))
         water_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._water_loc))
-        if food_dist < 1:
+        if food_dist == 1:
             self._pet["hunger"] = np.minimum(self._pet["hunger"] + 20, 100)
             return {"action_type": "interact", "status": "success", "interact_type": "food"}
-        elif water_dist < 1:
+        elif water_dist == 1:
             self._pet["thirst"] = np.minimum(self._pet["thirst"] + 20, 100)
             return {"action_type": "interact", "status": "success", "interact_type": "water"}
         else:

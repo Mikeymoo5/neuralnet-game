@@ -134,7 +134,7 @@ def optimize_model():
 episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
-def train(n_episodes, wait_time=0, render=False, report_interval=10):
+def train(n_episodes, wait_time=0, render=True, report_interval=10):
     for i_episode in range(n_episodes):
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
@@ -168,7 +168,7 @@ def train(n_episodes, wait_time=0, render=False, report_interval=10):
                 break
             if wait_time > 0: time.sleep(wait_time) # Wait for a certain amount of time before taking the next step
 
-train(1000, report_interval=20)
+train(2000, report_interval=20)
 plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True)
 while True:
     pass
