@@ -5,7 +5,7 @@ import pygame
 from UTIL import *
 
 class SimEnv(gym.Env):
-    metadata = {'render_modes': ['human'], 'render_fps': 1000000}
+    metadata = {'render_modes': ['human'], 'render_fps': 60}
 
     def __init__(self, render_mode = None, cell_size = 16, grid_size = 20):
         

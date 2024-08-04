@@ -13,6 +13,8 @@ import random
 import time
 import matplotlib
 import matplotlib.pyplot as plt
+import click
+import sys
 
 # Gymnasium and Environment imports
 import gymnasium as gym
@@ -55,22 +57,20 @@ device = torch.device(
     "cpu"
 )
 
-print(f"Using device: {device}")
+click.echo(click.style(f"Using device: {device}", fg="cyan"))
 
-t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
-env = FlattenObservation(t_env) # Flatten the observation space
+t_env = None
+env = None
 
-state, info = env.reset()
-n_observations = len(state)
-print(f'Observation length: {len(state)}')
-n_actions = env.action_space.n
+state, info = None, None
+n_observations = None
+n_actions = None
 
-policy_net = DQN(n_actions, n_observations).to(device)
-target_net = DQN(n_actions, n_observations).to(device)
-target_net.load_state_dict(policy_net.state_dict())
+policy_net = None
+target_net = None
 
-optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
-memory = Replay(10000) # Create a replay memory with a capacity of 10000
+optimizer = None
+memory = None
 
 # This function will occasionally choose a random action instead of a predicted action, with the odds decreasing as time goes on
 # Taken from the Pytorch Reinforcement Learning tutorial
@@ -134,7 +134,22 @@ def optimize_model():
 episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
-def train(n_episodes, wait_time=0, render=True, report_interval=10):
+def train(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100):
+
+    t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
+    env = FlattenObservation(t_env) # Flatten the observation space
+
+    state, info = env.reset()
+    n_observations = len(state)
+    n_actions = env.action_space.n
+
+    policy_net = DQN(n_actions, n_observations).to(device)
+    target_net = DQN(n_actions, n_observations).to(device)
+    target_net.load_state_dict(policy_net.state_dict())
+
+    optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
+    memory = Replay(10000) # Create a replay memory with a capacity of 10000
+
     for i_episode in range(n_episodes):
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
@@ -144,7 +159,10 @@ def train(n_episodes, wait_time=0, render=True, report_interval=10):
             reward = torch.tensor([reward], device=device) # Converts the reward to a tensor with a single value
             done = terminated or truncated # The episode is done if the environment is terminated or truncated
             if i % report_interval == 0:
-                print(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}")
+                click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
+            if i_episode % save_interval == 0 & i == 0:
+                torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
+                click.echo(click.style(f"Saving model - Episode {i_episode}", fg="green"))
             if terminated:
                 next_state = None
             else:
@@ -168,111 +186,145 @@ def train(n_episodes, wait_time=0, render=True, report_interval=10):
                 break
             if wait_time > 0: time.sleep(wait_time) # Wait for a certain amount of time before taking the next step
 
-train(2000, report_interval=20)
-plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True)
-while True:
-    pass
+def play(model_name="model"):
+    try:
+        # NOTE: Weights_only is set to true so that only the weights are loaded (duh), preventing malicious code execution from unknown model sources
+        agent = torch.load(f"models/{model_name}.pt", weights_only=True)
+    except FileNotFoundError:
+        click.echo(click.style("Model not found. Exiting...", fg="red"))
+        sys.exit(1)
+    click.echo(click.style("Model loaded", fg="green"))
+    try:
+        t_env = gym.make("SimEnv-v0", disable_env_checker=True, render_mode="human") # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
+        env = FlattenObservation(t_env) # Flatten the observation space
+    except Exception as e:
+        click.echo(click.style(f"Error: {e}", fg="red"))
+        sys.exit(1)
+    click.echo(click.style("Environment loaded", fg="green"))
 
-# Misc constants
-GRID_SIZE = 16
 
-GRID_X = 40
-GRID_Y = 40
+@click.command()
+@click.option("--train", type=bool, default=False)
+@click.option("--train-duration", type=int, default=0)
+@click.option("--report-interval", type=int, default=10)
+@click.option("--save-interval", type=int, default=100)
+@click.option("--model-name", type=str, default="model")
+def __main__(train, train_duration, report_interval, save_interval, model_name) -> None:
+    if train:
+        click.echo(click.style("Starting in training mode", fg="green"))
+        train(train_duration, report_interval=report_interval, save_interval=save_interval)
+        # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True) #TODO: show plot when arg is passed
+    else:
+        click.echo(click.style("Starting in play mode", fg="green"))
+        play(model_name)
+        
+if __name__ == "__main__":
+    __main__()
 
-SCREEN_WIDTH = GRID_SIZE * GRID_X
-SCREEN_HEIGHT = GRID_SIZE * GRID_Y
-world = numpy.zeros(shape = (GRID_X, GRID_Y), dtype = int)
-SPRITE_DATA = {
-    "colors": {
-        "pet": (115, 113, 81),
-        "food": (92, 62, 43),
-        "water": (15, 159, 255),
-        "background": (23, 194, 59)
-    }
-}
+# OLD CODE - TO BE REMOVED
 
-# TODO: Implement CLI options to disable the pygame interface and train the neural net
-# @click.command()
-# @click.option("--train")
-def main():
-    # Pygame init
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Neural Net Game")
-    running = True
+# # train(1000, report_interval=20)
+# # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True)
+# # while True:
+# #     pass
+
+# # Misc constants
+# GRID_SIZE = 16
+
+# GRID_X = 40
+# GRID_Y = 40
+
+# SCREEN_WIDTH = GRID_SIZE * GRID_X
+# SCREEN_HEIGHT = GRID_SIZE * GRID_Y
+# world = numpy.zeros(shape = (GRID_X, GRID_Y), dtype = int)
+# SPRITE_DATA = {
+#     "colors": {
+#         "pet": (115, 113, 81),
+#         "food": (92, 62, 43),
+#         "water": (15, 159, 255),
+#         "background": (23, 194, 59)
+#     }
+# }
+
+# # TODO: Implement CLI options to disable the pygame interface and train the neural net
+# # @click.command()
+# # @click.option("--train")
+# def main():
+#     # Pygame init
+#     pygame.init()
+#     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+#     pygame.display.set_caption("Neural Net Game")
+#     running = True
     
-    global loc_dict
-    loc_dict = {
-        "pet": (20, 20),
-        "food": (10, 10),
-        "water": (30, 10)
-    }
-    sprites = pygame.sprite.Group()
-    pet = Sprites.PetSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["pet"])
-    sprites.add(pet)
+#     global loc_dict
+#     loc_dict = {
+#         "pet": (20, 20),
+#         "food": (10, 10),
+#         "water": (30, 10)
+#     }
+#     sprites = pygame.sprite.Group()
+#     pet = Sprites.PetSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["pet"])
+#     sprites.add(pet)
 
-    food = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["food"], 5)
-    sprites.add(food)
+#     food = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["food"], 5)
+#     sprites.add(food)
 
-    water = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["water"], 5)
-    sprites.add(water)
+#     water = Sprites.GenericDiminishingSprite(GRID_SIZE, GRID_SIZE, SPRITE_DATA["colors"]["water"], 5)
+#     sprites.add(water)
 
-    active_tool = "food"
-    # Pygame loop
-    while running:
-        screen.fill(SPRITE_DATA["colors"]["background"])
+#     active_tool = "food"
+#     # Pygame loop
+#     while running:
+#         screen.fill(SPRITE_DATA["colors"]["background"])
 
-        # Update the positions of the sprites
-        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["pet"][0], loc_dict["pet"][1], GRID_SIZE)
-        pet.updatePos(temp_x, temp_y)
+#         # Update the positions of the sprites
+#         temp_x, temp_y = coord_converter.gridToScreen(loc_dict["pet"][0], loc_dict["pet"][1], GRID_SIZE)
+#         pet.updatePos(temp_x, temp_y)
         
-        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["food"][0], loc_dict["food"][1], GRID_SIZE)
-        food.updatePos(temp_x, temp_y)
+#         temp_x, temp_y = coord_converter.gridToScreen(loc_dict["food"][0], loc_dict["food"][1], GRID_SIZE)
+#         food.updatePos(temp_x, temp_y)
 
-        temp_x, temp_y = coord_converter.gridToScreen(loc_dict["water"][0], loc_dict["water"][1], GRID_SIZE)
-        water.updatePos(temp_x, temp_y)
+#         temp_x, temp_y = coord_converter.gridToScreen(loc_dict["water"][0], loc_dict["water"][1], GRID_SIZE)
+#         water.updatePos(temp_x, temp_y)
 
-        updatePositions()
-        sprites.draw(screen)
+#         updatePositions()
+#         sprites.draw(screen)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 running = False
+#             elif event.type == pygame.KEYDOWN:
 
-                if event.key == pygame.K_1:
-                    active_tool = "food"
-                elif event.key == pygame.K_2:
-                    active_tool = "water"
+#                 if event.key == pygame.K_1:
+#                     active_tool = "food"
+#                 elif event.key == pygame.K_2:
+#                     active_tool = "water"
 
-                elif event.key == pygame.K_f:
-                    if active_tool == "food":
-                        food.use()
-                        if food.uses <= 0:
-                            loc_dict["food"] = (-1, -1)
-                    elif active_tool == "water":
-                        water.use()
-                        if water.uses <= 0:
-                            loc_dict["water"] = (-1, -1)
+#                 elif event.key == pygame.K_f:
+#                     if active_tool == "food":
+#                         food.use()
+#                         if food.uses <= 0:
+#                             loc_dict["food"] = (-1, -1)
+#                     elif active_tool == "water":
+#                         water.use()
+#                         if water.uses <= 0:
+#                             loc_dict["water"] = (-1, -1)
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Updates the food position to the grid cell that was clicked
-                # TODO: Allow for clicking to change what is placed - i.e water, food, toys, etc
-                if active_tool == "food":
-                    food.replenish()
-                elif active_tool == "water":
-                    water.replenish()
-                loc_dict[active_tool] = coord_converter.screenToGrid(event.pos[0], event.pos[1], GRID_SIZE)
+#             elif event.type == pygame.MOUSEBUTTONDOWN:
+#                 # Updates the food position to the grid cell that was clicked
+#                 # TODO: Allow for clicking to change what is placed - i.e water, food, toys, etc
+#                 if active_tool == "food":
+#                     food.replenish()
+#                 elif active_tool == "water":
+#                     water.replenish()
+#                 loc_dict[active_tool] = coord_converter.screenToGrid(event.pos[0], event.pos[1], GRID_SIZE)
         
-        # Push the changes to the screen
-        pygame.display.flip()
+#         # Push the changes to the screen
+#         pygame.display.flip()
 
-def updatePositions():
-    global world
-    world = numpy.zeros(shape = (GRID_X, GRID_Y), dtype = int)
-    world[loc_dict["pet"][0]][loc_dict["pet"][1]] = 1
-    world[loc_dict["food"][0]][loc_dict["food"][1]] = 2
-    world[loc_dict["water"][0]][loc_dict["water"][1]] = 3
-            
-# if __name__ == "__main__":
-#     main()
+# def updatePositions():
+#     global world
+#     world = numpy.zeros(shape = (GRID_X, GRID_Y), dtype = int)
+#     world[loc_dict["pet"][0]][loc_dict["pet"][1]] = 1
+#     world[loc_dict["food"][0]][loc_dict["food"][1]] = 2
+#     world[loc_dict["water"][0]][loc_dict["water"][1]] = 3
