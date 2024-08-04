@@ -75,6 +75,7 @@ memory = None
 # This function will occasionally choose a random action instead of a predicted action, with the odds decreasing as time goes on
 # Taken from the Pytorch Reinforcement Learning tutorial
 def select_action(state):
+    global env
     global steps_done
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
@@ -134,7 +135,8 @@ def optimize_model():
 episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
-def train(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100):
+def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100):
+    global env, n_observations, n_actions, policy_net, target_net, optimizer, memory
 
     t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
     env = FlattenObservation(t_env) # Flatten the observation space
@@ -201,18 +203,27 @@ def play(model_name="model"):
         click.echo(click.style(f"Error: {e}", fg="red"))
         sys.exit(1)
     click.echo(click.style("Environment loaded", fg="green"))
+    while env.pyg_running:
+        time.sleep(1) # Wait for a second before taking the next step
+        with torch.no_grad():
+            # t.max(1) will return the largest column value of each row.
+            # second column on max result is index of where max element was
+            # found, so we pick action with the larger expected reward.
+            action = policy_net(state).max(1).indices.view(1, 1)
+        env.step(action)
+        
 
 
 @click.command()
-@click.option("--train", type=bool, default=False)
-@click.option("--train-duration", type=int, default=0)
+@click.option("--train", is_flag=True)
+@click.option("--train-duration", type=int, default=1000)
 @click.option("--report-interval", type=int, default=10)
 @click.option("--save-interval", type=int, default=100)
 @click.option("--model-name", type=str, default="model")
 def __main__(train, train_duration, report_interval, save_interval, model_name) -> None:
     if train:
         click.echo(click.style("Starting in training mode", fg="green"))
-        train(train_duration, report_interval=report_interval, save_interval=save_interval)
+        train_agent(train_duration, report_interval=report_interval, save_interval=save_interval)
         # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True) #TODO: show plot when arg is passed
     else:
         click.echo(click.style("Starting in play mode", fg="green"))

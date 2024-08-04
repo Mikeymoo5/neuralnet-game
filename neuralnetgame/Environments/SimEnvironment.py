@@ -40,6 +40,8 @@ class SimEnv(gym.Env):
         self.screen = None
         self.clock = None
         self.render_mode = render_mode
+        if render_mode == "human":
+            self.pyg_running = True
 
     def _move_pet(self, move: list):
         new_loc = np.array(self._pet["loc"]) + np.array(move)
