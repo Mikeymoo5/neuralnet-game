@@ -1,5 +1,8 @@
+# Prevent non-finalized models from being pushed to the repository
 models/*
 !models/
+!models/pretrained-model.pt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

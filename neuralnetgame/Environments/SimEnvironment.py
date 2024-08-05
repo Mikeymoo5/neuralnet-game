@@ -113,23 +113,21 @@ class SimEnv(gym.Env):
                 if self.action["interact_type"] == "food":
                     if self._pet["hunger"] <= 80:
                         reward += 2
-                    else:
-                        reward += 2
                 if self.action["interact_type"] == "water":
                     if self._pet["thirst"] <= 80:
-                        reward += 2
-                    else:
                         reward += 2
 
         # Punish the agent for low hunger or thirst
         if self._pet["hunger"] <= 40:
             food_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._food_loc))
             if food_dist < 5:
+                # Punish the agent less for being closer to the food when hungry
                 reward += (0-food_dist) * 0.01
             reward -= 0.1
         if self._pet["thirst"] <= 40:
             water_dist = np.linalg.norm(np.array(self._pet["loc"]) - np.array(self._food_loc))
             if water_dist < 5:
+                # Punish the agent less for being closer to the water when thirsty
                 reward += (0-water_dist) * 0.01
             reward -= 0.1
         
@@ -150,9 +148,6 @@ class SimEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
-
-        if self.render_mode == "human":
-            self._render_frame()
 
         # Return an observation of the environment - In this case, the world array. Also return auxillary information
         return observation, info
@@ -181,27 +176,33 @@ class SimEnv(gym.Env):
         if self._pet["hunger"] <= 0 or self._pet["thirst"] <= 0:
             terminated = True
 
-        if self.render_mode == "human":
-            self._render_frame()
+        # if self.render_mode == "human":
+        #     self._render_frame()
 
         return observation, reward, terminated, False, info
     
-    def _render_frame(self):
+    def render_frame(self):
+        if self.clock:
+            pygame.display.set_caption(f"fps: {self.clock.get_fps()}")
         if self.screen == None:
             pygame.init()
             pygame.display.init()
             self.screen = pygame.display.set_mode((self.grid_size * self.cell_size, self.grid_size * self.cell_size))
+            self.font = pygame.font.SysFont("Arial", 16)
         if self.clock == None:
             self.clock = pygame.time.Clock()
         self.screen.fill((0,255,0))
-
+        
         pygame.draw.rect(self.screen, (0,238,255), coord_converter.gridToRect(self._water_loc[0], self._water_loc[1], self.cell_size)) # Draws water
         pygame.draw.rect(self.screen, (255,140,0), coord_converter.gridToRect(self._food_loc[0], self._food_loc[1], self.cell_size)) # Draws food
         pygame.draw.rect(self.screen, (99, 58, 39), coord_converter.gridToRect(self._pet["loc"][0], self._pet["loc"][1], self.cell_size)) # Draws the pet
-        self.clock.tick(self.metadata["render_fps"])
+        self.screen.blit(self.font.render(f"Hunger: {self._pet['hunger']}", True, "brown"), (0,0))
+        self.screen.blit(self.font.render(f"Thirst: {self._pet['thirst']}", True, "blue1"), (0,20))
+
         pygame.display.flip()
 
     def close(self):
         if self.window is not None:
+            self.pyg_running = False
             pygame.display.quit()
             pygame.quit()
