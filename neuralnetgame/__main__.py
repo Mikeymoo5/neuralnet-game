@@ -77,8 +77,6 @@ memory = Replay(10000) # Create a replay memory with a capacity of 10000
 # This function will occasionally choose a random action instead of a predicted action, with the odds decreasing as time goes on
 # Taken from the Pytorch Reinforcement Learning tutorial
 def select_action(state):
-    global env
-    global steps_done
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
         math.exp(-1. * steps_done / EPS_DECAY)
@@ -180,7 +178,10 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
 def play(model_name="model"):
     try:
         # NOTE: Weights_only is set to true so that only the weights are loaded (duh), preventing malicious code execution from unknown model sources
-        agent = torch.load(f"models/{model_name}.pt", weights_only=True)
+        net = DQN(n_actions, n_observations).to(device)
+        net.load_state_dict(torch.load(f"models/{model_name}.pt", map_location=device, weights_only=True))
+        # net.eval()
+
     except FileNotFoundError:
         click.echo(click.style("Model not found. Exiting...", fg="red"))
         sys.exit(1)
@@ -192,14 +193,17 @@ def play(model_name="model"):
         click.echo(click.style(f"Error: {e}", fg="red"))
         sys.exit(1)
     click.echo(click.style("Environment loaded", fg="green"))
+    state, info = env.reset()
     while env.pyg_running:
-        time.sleep(1) # Wait for a second before taking the next step
+         # Wait for a second before taking the next step
         with torch.no_grad():
             # t.max(1) will return the largest column value of each row.
             # second column on max result is index of where max element was
             # found, so we pick action with the larger expected reward.
-            action = policy_net(state).max(1).indices.view(1, 1)
-        env.step(action)
+            actions = net(torch.from_numpy(state).float())
+            action = torch.argmax(actions).item()
+        observation, reward, terminated, truncated, _ = env.step(action)
+        state = observation
         
 @click.command()
 @click.option("--train", is_flag=True)
