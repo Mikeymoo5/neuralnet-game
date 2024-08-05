@@ -59,18 +59,20 @@ device = torch.device(
 
 click.echo(click.style(f"Using device: {device}", fg="cyan"))
 
-t_env = None
-env = None
+t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
+env = FlattenObservation(t_env) # Flatten the observation space
 
-state, info = None, None
-n_observations = None
-n_actions = None
+state, info = env.reset()
+n_observations = len(state)
+n_actions = env.action_space.n
 
-policy_net = None
-target_net = None
+policy_net = DQN(n_actions, n_observations).to(device)
+target_net = DQN(n_actions, n_observations).to(device)
+target_net.load_state_dict(policy_net.state_dict())
 
-optimizer = None
-memory = None
+optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
+
+memory = Replay(10000) # Create a replay memory with a capacity of 10000
 
 # This function will occasionally choose a random action instead of a predicted action, with the odds decreasing as time goes on
 # Taken from the Pytorch Reinforcement Learning tutorial
@@ -136,21 +138,8 @@ episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
 def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100):
-    global env, n_observations, n_actions, policy_net, target_net, optimizer, memory
 
-    t_env = gym.make("SimEnv-v0", disable_env_checker=False) # Disable the environment checker as it throws a warning about flattening the observation, which is done on the next line
-    env = FlattenObservation(t_env) # Flatten the observation space
-
-    state, info = env.reset()
-    n_observations = len(state)
-    n_actions = env.action_space.n
-
-    policy_net = DQN(n_actions, n_observations).to(device)
-    target_net = DQN(n_actions, n_observations).to(device)
-    target_net.load_state_dict(policy_net.state_dict())
-
-    optimizer = optim.AdamW(policy_net.parameters(), lr=LR, amsgrad=True)
-    memory = Replay(10000) # Create a replay memory with a capacity of 10000
+    
 
     for i_episode in range(n_episodes):
         state, info = env.reset()
@@ -212,8 +201,6 @@ def play(model_name="model"):
             action = policy_net(state).max(1).indices.view(1, 1)
         env.step(action)
         
-
-
 @click.command()
 @click.option("--train", is_flag=True)
 @click.option("--train-duration", type=int, default=1000)
