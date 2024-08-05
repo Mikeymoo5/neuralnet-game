@@ -146,10 +146,10 @@ class SimEnv(gym.Env):
         }
 
         # This is INCREDIBLY janky - it could theoretically run forever :O
-        self._food_loc = [self.grid_size//2, self.grid_size//4]
+        self._food_loc = [self.grid_size//2, (self.grid_size//4)*3]
         while self._food_loc == self._pet["loc"]:
             self._food_loc = [random.randint(0, self.grid_size-1), random.randint(0, self.grid_size-1)]
-        self._water_loc = [self.grid_size//2, self.grid_size//4]
+        self._water_loc = [self.grid_size//2, (self.grid_size//4)*3]
         while self._water_loc == self._pet["loc"] or self._water_loc == self._food_loc:
             self._water_loc = [random.randint(0, self.grid_size-1), random.randint(0, self.grid_size-1)]
 
