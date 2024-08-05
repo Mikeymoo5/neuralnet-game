@@ -131,8 +131,9 @@ def optimize_model():
 episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
-def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100):
+def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100, resume=False):
     for i_episode in range(n_episodes):
+        click.echo(click.style(f"RESUME: {resume}", fg="yellow"))
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
         for i in count():
@@ -143,7 +144,10 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
             if i % report_interval == 0:
                 click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
             if i_episode % save_interval == 0 & i == 0:
-                torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
+                if resume:
+                    torch.save(policy_net.state_dict(), f"models/model_chk_{i_episode}.pt")
+                else:
+                    torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
                 click.echo(click.style(f"Saving model - Episode {i_episode}", fg="green"))
             if terminated:
                 next_state = None
@@ -167,8 +171,10 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
                 episode_durations.append(i + 1)
                 break
             if wait_time > 0: time.sleep(wait_time) # Wait for a certain amount of time before taking the next step
-    torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
-    plot_durations(episode_durations, is_ipython, show_result=True)
+    if resume:
+        torch.save(policy_net.state_dict(), f"models/model_chk_{i_episode}.pt")
+    else:
+        torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
     plt.ioff()
     plt.show()
 def play(model_name="model"):
@@ -198,6 +204,16 @@ def play(model_name="model"):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 env.close()
+                sys.exit(0)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                if event.button == 1:
+                    env.on_mouse_click(x, y, "food")
+                elif event.button == 3:
+                    env.on_mouse_click(x, y, "water")
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    env.reset()
         delta = env.clock.tick(15) / 1000
         timer += delta
          # Wait for a second before taking the next step
@@ -215,15 +231,25 @@ def play(model_name="model"):
         
 @click.command()
 @click.option("--train", is_flag=True)
+@click.option("--resume", type=str, default=None)
 @click.option("--train-duration", type=int, default=1000)
 @click.option("--report-interval", type=int, default=10)
 @click.option("--save-interval", type=int, default=100)
 @click.option("--model-name", type=str, default="pretrained-model")
-def __main__(train, train_duration, report_interval, save_interval, model_name) -> None:
+def __main__(train, train_duration, report_interval, save_interval, model_name, resume) -> None:
     global device
+    global policy_net
     if train:
         click.echo(click.style("Starting in training mode", fg="green"))
-        train_agent(train_duration, report_interval=report_interval, save_interval=save_interval)
+        if resume is not None:
+            # Attempt to load the model
+            try:
+                policy_net.load_state_dict(torch.load(f"models/{resume}.pt", map_location=device))
+            except FileNotFoundError:
+                click.echo(click.style("Model not found. Exiting...", fg="red"))
+                sys.exit(1)
+            click.echo(click.style("Checkpoint loaded", fg="green"))
+        train_agent(train_duration, report_interval=report_interval, save_interval=save_interval, resume=True if resume is not None else False)
         # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True) #TODO: show plot when arg is passed
     else:
         # TODO: Fix the bug that causes Torch DirectML to crash the game

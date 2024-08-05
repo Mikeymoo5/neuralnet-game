@@ -3,6 +3,7 @@ from gymnasium import spaces
 import numpy as np
 import pygame
 from UTIL import *
+import random
 
 class SimEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 60}
@@ -137,14 +138,20 @@ class SimEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self._world = np.zeros((self.grid_size, self.grid_size), dtype=int)
+
         self._pet = {
             "loc": [self.grid_size//2, (self.grid_size//4)*3],
             "hunger": 100.0,
             "thirst": 100.0
         }
 
-        self._food_loc = [self.grid_size//4, self.grid_size//4]
-        self._water_loc = [(self.grid_size//4)*3, self.grid_size//4]
+        # This is INCREDIBLY janky - it could theoretically run forever :O
+        self._food_loc = [self.grid_size//2, self.grid_size//4]
+        while self._food_loc == self._pet["loc"]:
+            self._food_loc = [random.randint(0, self.grid_size-1), random.randint(0, self.grid_size-1)]
+        self._water_loc = [self.grid_size//2, self.grid_size//4]
+        while self._water_loc == self._pet["loc"] or self._water_loc == self._food_loc:
+            self._water_loc = [random.randint(0, self.grid_size-1), random.randint(0, self.grid_size-1)]
 
         observation = self._get_obs()
         info = self._get_info()
@@ -206,3 +213,16 @@ class SimEnv(gym.Env):
             self.pyg_running = False
             pygame.display.quit()
             pygame.quit()
+
+    def on_mouse_click(self, x, y, obj_type):
+        if obj_type == "food":
+            self._moveFood(coord_converter.screenToGrid(x, y, self.cell_size))
+        if obj_type == "water":
+            self._moveWater(coord_converter.screenToGrid(x, y, self.cell_size))
+
+    # Probably a better way to move food and water, but this is fine for now
+    def _moveFood(self, loc):
+        self._food_loc = loc
+
+    def _moveWater(self, loc):
+        self._water_loc = loc
