@@ -2,10 +2,12 @@
 models/*
 !models/
 !models/pretrained-model.pt
+!models/.gitkeep
 
-# Prevent replayus from being pushed to the repository
+# Prevent replays from being pushed to the repository
 replays/*
 !replays/
+!replays/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
