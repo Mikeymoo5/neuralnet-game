@@ -226,3 +226,7 @@ class SimEnv(gym.Env):
 
     def _moveWater(self, loc):
         self._water_loc = loc
+
+    def setState(self, state):
+        self._world = state["world"]
+        self._pet = state["pet"]

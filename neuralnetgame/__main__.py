@@ -155,7 +155,7 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
                 click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
             if i_episode % save_interval == 0 & i == 0:
                 # Save the replay memory
-                rpl = open(f"replays/replay_{i_episode}", "w") # Open a file to write the replay memory to, or create a new one if it does not exist
+                rpl = open(f"replays/replay_{i_episode}.rpl", "w") # Open a file to write the replay memory to, or create a new one if it does not exist
                 rpl.write(str(replay_memory.memory)) # Write the replay memory to the file
                 rpl.close() # Close the file
                 replay_memory = Replay(10000) # Reset the replay memory
@@ -244,13 +244,17 @@ def play(model_name="model"):
             state = observation
         
 @click.command()
+
 @click.option("--train", is_flag=True)
-@click.option("--replay", is_flag=True)
+@click.option("--model-name", type=str, default="pretrained-model")
 @click.option("--resume", type=str, default=None)
 @click.option("--train-duration", type=int, default=1000)
 @click.option("--report-interval", type=int, default=10)
 @click.option("--save-interval", type=int, default=100)
-@click.option("--model-name", type=str, default="pretrained-model")
+
+@click.option("--replay", is_flag=True)
+@click.option("--replay-name", type=str, default=None)
+
 def __main__(train, train_duration, report_interval, save_interval, model_name, resume, replay) -> None:
     global device
     global policy_net
@@ -266,6 +270,8 @@ def __main__(train, train_duration, report_interval, save_interval, model_name, 
             click.echo(click.style("Checkpoint loaded", fg="green"))
         train_agent(train_duration, report_interval=report_interval, save_interval=save_interval, resume=True if resume is not None else False)
         # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True) #TODO: show plot when arg is passed
+    elif replay:
+        viewReplay()
     else:
         # TODO: Fix the bug that causes Torch DirectML to crash the game
         # if torch_directml.is_available():

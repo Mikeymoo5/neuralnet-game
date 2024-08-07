@@ -15,3 +15,10 @@ class Replay():
     
     def __len__(self):
         return len(self.memory) # Returns the length of the memory
+    
+    def getState(self, index):
+        return self.memory[index].state
+
+    def loadMemory(self, path_to_file):
+        f = open(path_to_file, 'r')
+        self.memory = deque([],maxlen=int(f.readline()))
