@@ -132,31 +132,45 @@ episode_durations = [] # The duration of each episode
 
 # Training loop - Taken from the Pytorch Reinforcement Learning tutorial but modified by me
 def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_interval=100, resume=False):
+    # Run every episode
     for i_episode in range(n_episodes):
         click.echo(click.style(f"RESUME: {resume}", fg="yellow"))
         state, info = env.reset()
         state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+        replay_memory = Replay(10000)
+        # Run every step
         for i in count():
             action = select_action(state) # Selects an action based on the state of the environment
             observation, reward, terminated, truncated, _ = env.step(action.item())
             reward = torch.tensor([reward], device=device) # Converts the reward to a tensor with a single value
             done = terminated or truncated # The episode is done if the environment is terminated or truncated
+
+            # Stop the episode if the environment is terminated
+            if terminated:
+                next_state = None
+            else:
+                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)\
+                
             if i % report_interval == 0:
                 click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
             if i_episode % save_interval == 0 & i == 0:
+                # Save the replay memory
+                rpl = open(f"replays/replay_{i_episode}", "w") # Open a file to write the replay memory to, or create a new one if it does not exist
+                rpl.write(str(replay_memory.memory)) # Write the replay memory to the file
+                rpl.close() # Close the file
+                replay_memory = Replay(10000) # Reset the replay memory
                 if resume:
                     torch.save(policy_net.state_dict(), f"models/model_chk_{i_episode}.pt")
                 else:
                     torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
                 click.echo(click.style(f"Saving model - Episode {i_episode}", fg="green"))
-            if terminated:
-                next_state = None
-            else:
-                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
 
-            # Push the transition to the replay memory and progress to the next state
+            # Push the transition to memory and progress to the next state
             memory.push(state, action, next_state, reward)
             state = next_state
+
+            # Push the transition to the replay memory
+            replay_memory.push(state, action, next_state, reward)
 
             optimize_model() # Optimize the model
 
@@ -231,12 +245,13 @@ def play(model_name="model"):
         
 @click.command()
 @click.option("--train", is_flag=True)
+@click.option("--replay", is_flag=True)
 @click.option("--resume", type=str, default=None)
 @click.option("--train-duration", type=int, default=1000)
 @click.option("--report-interval", type=int, default=10)
 @click.option("--save-interval", type=int, default=100)
 @click.option("--model-name", type=str, default="pretrained-model")
-def __main__(train, train_duration, report_interval, save_interval, model_name, resume) -> None:
+def __main__(train, train_duration, report_interval, save_interval, model_name, resume, replay) -> None:
     global device
     global policy_net
     if train:

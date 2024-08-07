@@ -3,6 +3,10 @@ models/*
 !models/
 !models/pretrained-model.pt
 
+# Prevent replayus from being pushed to the repository
+replays/*
+!replays/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
