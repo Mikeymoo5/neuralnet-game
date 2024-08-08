@@ -1,5 +1,7 @@
 from collections import namedtuple, deque
 import random
+import pickle
+
 Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward')) # Maps state and action to the next state and reward
 
 # Most of this code was provided by the PyTorch tutorial on Reinforcement Learning
@@ -19,6 +21,7 @@ class Replay():
     def getState(self, index):
         return self.memory[index].state
 
-    def loadMemory(self, path_to_file):
-        f = open(path_to_file, 'r')
-        self.memory = deque([],maxlen=int(f.readline()))
+    # def loadMemory(self, path_to_file):
+    #     f = open(path_to_file, 'r')
+
+    #     self.memory = deque([f.readline()],maxlen=10000)

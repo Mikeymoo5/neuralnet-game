@@ -15,6 +15,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import click
 import sys
+import pickle
 
 # Gymnasium and Environment imports
 import gymnasium as gym
@@ -155,8 +156,8 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
                 click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
             if i_episode % save_interval == 0 & i == 0:
                 # Save the replay memory
-                rpl = open(f"replays/replay_{i_episode}.rpl", "w") # Open a file to write the replay memory to, or create a new one if it does not exist
-                rpl.write(str(replay_memory.memory)) # Write the replay memory to the file
+                rpl = open(f"replays/replay_{i_episode}.rpl", "wb") # Open a file to write the replay memory to, or create a new one if it does not exist
+                pickle.dump(replay_memory.memory, rpl) # Write the replay memory to the file
                 rpl.close() # Close the file
                 replay_memory = Replay(10000) # Reset the replay memory
                 if resume:
