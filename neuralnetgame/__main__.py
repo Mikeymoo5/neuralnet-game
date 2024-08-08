@@ -255,7 +255,7 @@ def play(model_name="model"):
 @click.option("--replay", is_flag=True)
 @click.option("--replay-name", type=str, default=None)
 
-def __main__(train, train_duration, report_interval, save_interval, model_name, resume, replay) -> None:
+def __main__(train, train_duration, report_interval, save_interval, model_name, resume, replay, replay_name) -> None:
     global device
     global policy_net
     if train:
@@ -271,7 +271,7 @@ def __main__(train, train_duration, report_interval, save_interval, model_name, 
         train_agent(train_duration, report_interval=report_interval, save_interval=save_interval, resume=True if resume is not None else False)
         # plotting.plot_durations(episode_durations=episode_durations, is_ipython=is_ipython, show_result=True) #TODO: show plot when arg is passed
     elif replay:
-        viewReplay()
+        viewReplay(replay_name)
     else:
         # TODO: Fix the bug that causes Torch DirectML to crash the game
         # if torch_directml.is_available():
