@@ -150,7 +150,7 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
             if terminated:
                 next_state = None
             else:
-                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)\
+                next_state = torch.tensor(observation, dtype=torch.float32, device=device).unsqueeze(0)
                 
             if i % report_interval == 0:
                 click.echo(click.style(f"Episode {i_episode} - Step {i} - Reward: {reward.item()}", fg="white"))
@@ -166,12 +166,14 @@ def train_agent(n_episodes, wait_time=0, render=True, report_interval=10, save_i
                     torch.save(policy_net.state_dict(), f"models/model_{i_episode}.pt")
                 click.echo(click.style(f"Saving model - Episode {i_episode}", fg="green"))
 
-            # Push the transition to memory and progress to the next state
+            # Push the transition to memory 
             memory.push(state, action, next_state, reward)
+
+            # Push the transition to the replay memory and progress to the next state
+            replay_memory.push(observation, action, next_state, reward)
             state = next_state
 
-            # Push the transition to the replay memory
-            replay_memory.push(state, action, next_state, reward)
+
 
             optimize_model() # Optimize the model
 
