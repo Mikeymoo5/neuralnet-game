@@ -8,5 +8,5 @@
 - [ ] Comfort features
   - [x] Full click support for easier training
   - [ ] Replayability to watch model progress
-  - [ ] Game element (player interaction with the model - placing food and water around the map)
+  - [x] Game element (player interaction with the model - placing food and water around the map)
 
